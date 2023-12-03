@@ -1,5 +1,6 @@
-package com.leyton.salescope.config.coverter;
+package com.leyton.keycloak.starter.config.coverter;
 
+import lombok.AllArgsConstructor;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -8,12 +9,12 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 
 import java.util.Collection;
 
+@AllArgsConstructor
 public class MyJwtAuthorizationConverter implements Converter<Jwt, AbstractAuthenticationToken> {
 
 
-    private Converter<Jwt, Collection<GrantedAuthority>> myJwtGrantedAuthorityConverter = new MyJwtGrantedAuthorityConverter();
-
-    private String principalClaimName = "preferred_username";
+    private Converter<Jwt, Collection<GrantedAuthority>> myJwtGrantedAuthorityConverter;
+    private String principalClaimName;
 
 
 

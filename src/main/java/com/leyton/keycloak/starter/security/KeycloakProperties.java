@@ -1,4 +1,4 @@
-package com.leyton.salescope.security;
+package com.leyton.keycloak.starter.security;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -22,4 +22,6 @@ public class KeycloakProperties {
     private List<String> jwsAlgorithms = Arrays.asList("RS256");
 
     private List<String> audiences = new ArrayList<>();
+
+    private String clientName;
 }

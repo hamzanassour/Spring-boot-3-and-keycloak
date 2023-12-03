@@ -1,5 +1,7 @@
-package com.leyton.salescope.config.coverter;
+package com.leyton.keycloak.starter.config.coverter;
 
+import com.leyton.keycloak.starter.security.KeycloakProperties;
+import lombok.AllArgsConstructor;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.core.convert.converter.Converter;
@@ -9,12 +11,15 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import java.util.*;
 
 
+@AllArgsConstructor
 public class MyJwtGrantedAuthorityConverter implements Converter<Jwt, Collection<GrantedAuthority>> {
+
+
+    private final KeycloakProperties keycloakProperties;
+
     private static final String DEFAULT_ROLE_PREFIX = "ROLE_";
 
     private static final String RESOURCE_ACCESS_CLAIM = "resource_access";
-
-    private static final String CLIENT_NAME = "salescope-rest-api";
 
     private static final String CLIENT_ROLES = "roles";
 
@@ -41,12 +46,12 @@ public class MyJwtGrantedAuthorityConverter implements Converter<Jwt, Collection
         // extracting resource_access claim
         resourceAccess = jwt.getClaim(RESOURCE_ACCESS_CLAIM);
 
-        if (resourceAccess.get(CLIENT_NAME) == null) {
-            log.warn("JWT does not contain the " + CLIENT_NAME + " claim.");
+        if (resourceAccess.get(keycloakProperties.getClientName()) == null) {
+            log.warn("JWT does not contain the " + keycloakProperties.getClientName() + " claim.");
             return Collections.emptyList();
         }
 
-        clientName = (Map<String, Object>) resourceAccess.get(CLIENT_NAME);
+        clientName = (Map<String, Object>) resourceAccess.get(keycloakProperties.getClientName());
 
         if (clientName.get(CLIENT_ROLES) == null){
             log.warn("JWT does not contain the " + CLIENT_ROLES + " claim.");
