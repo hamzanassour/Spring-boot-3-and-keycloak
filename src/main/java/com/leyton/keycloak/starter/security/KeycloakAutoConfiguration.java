@@ -26,10 +26,17 @@ import java.util.*;
 @AutoConfiguration
 @EnableMethodSecurity
 @EnableConfigurationProperties(KeycloakProperties.class)
+@ConditionalOnProperty(name = "keycloak.enabled", havingValue = "true", matchIfMissing = false)
 public class KeycloakAutoConfiguration {
 
+    /**
+     * logger
+     */
     private final Log log = LogFactory.getLog(getClass());
 
+    /**
+     * keycloakProperties
+     */
     private final KeycloakProperties keycloakProperties;
 
     @Autowired
@@ -37,12 +44,14 @@ public class KeycloakAutoConfiguration {
         this.keycloakProperties = keycloakProperties;
     }
 
+    /**
+     *  This method is used to create a SecurityFilterChain Bean which is used to configure the security to use JWT
+     * @param http HttpSecurity
+     * @return SecurityFilterChain
+     * @throws Exception Exception
+     */
     @Bean
-    @ConditionalOnProperty(name = "keycloak.enabled", havingValue = "true", matchIfMissing = false)
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-
-
-        log.warn("AutoConfiguration applied successfully");
 
         http.authorizeHttpRequests(
                 request ->
@@ -65,12 +74,13 @@ public class KeycloakAutoConfiguration {
         return http.build();
     }
 
-
+    /**
+     * This method is used to create a JwtDecoder Bean which is used to decode (decode & verify using JWK SET URI) the JWT token
+     * @return JwtDecoder
+     */
 
     @Bean
-    @ConditionalOnProperty(name = "keycloak.enabled", havingValue = "true", matchIfMissing = false)
     JwtDecoder myDecoder() {
-        log.warn("craeting  decoder");
         NimbusJwtDecoder nimbusJwtDecoder = NimbusJwtDecoder.withJwkSetUri(this.keycloakProperties.getJwkSetUri())
                 .jwsAlgorithms(this::jwsAlgorithms)
                 .build();
@@ -78,21 +88,35 @@ public class KeycloakAutoConfiguration {
         OAuth2TokenValidator<Jwt> defaultValidator = (issuerUri != null)
                 ? JwtValidators.createDefaultWithIssuer(issuerUri) : JwtValidators.createDefault();
         nimbusJwtDecoder.setJwtValidator(getValidators(defaultValidator));
+        log.info("Decoder created ...");
         return nimbusJwtDecoder;
     }
 
 
+    /**
+     * This method is used to return the JWS algorithms allowed
+     * @param signatureAlgorithms Set<SignatureAlgorithm>
+     */
     private void jwsAlgorithms(Set<SignatureAlgorithm> signatureAlgorithms) {
+        // By default, NimbusJwtDecoder, and hence Resource Server, will only trust and verify tokens using RS256. if you want to use other algorithms, you need to configure them explicitly using the jwsAlgorithms method.
         for (String algorithm : this.keycloakProperties.getJwsAlgorithms()) {
             signatureAlgorithms.add(SignatureAlgorithm.from(algorithm));
         }
     }
 
+    /**
+     * This method is used to return the OAuth2TokenValidator<Jwt> which is used to validate the JWT token(for validating jwt claims like issuer, audience, time ,  etc)
+     * @param defaultValidator OAuth2TokenValidator<Jwt>
+     * @return OAuth2TokenValidator<Jwt>
+     */
     private OAuth2TokenValidator<Jwt> getValidators(OAuth2TokenValidator<Jwt> defaultValidator) {
         List<String> audiences = this.keycloakProperties.getAudiences();
+        // in many cases the audience is not considered to be validated, so we need to check for null
         if (CollectionUtils.isEmpty(audiences)) {
             return defaultValidator;
         }
+         // here we can add more validators if needed (custom validators also can be added)
+         // most iss aud and time validations are done by default validator
         List<OAuth2TokenValidator<Jwt>> validators = new ArrayList<>();
         validators.add(defaultValidator);
         validators.add(new JwtClaimValidator<List<String>>(JwtClaimNames.AUD,
@@ -101,10 +125,13 @@ public class KeycloakAutoConfiguration {
     }
 
 
-
-    public MyJwtAuthorizationConverter myConverter(){
+    /**
+     * This method is used to create a MyJwtAuthorizationConverter Bean which is used to convert the JWT authorities claim to Spring Security GrantedAuthority list which is used for authorization
+     * @return MyJwtAuthorizationConverter
+     */
+    public MyJwtAuthorizationConverter myConverter() {
         Converter<Jwt, Collection<GrantedAuthority>> myJwtGrantedAuthorityConverter = new MyJwtGrantedAuthorityConverter(keycloakProperties);
-        return new MyJwtAuthorizationConverter(myJwtGrantedAuthorityConverter , keycloakProperties.getClientName());
+        return new MyJwtAuthorizationConverter(myJwtGrantedAuthorityConverter);
     }
 }
 
